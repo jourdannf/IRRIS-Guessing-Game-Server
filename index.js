@@ -4,11 +4,9 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 
 import Photo from "./models/photo.js";
+import Puzzle from "./models/puzzle.js";
 
 import * as fs from "fs";
-import readline from "readline";
-import { parseFile } from "@fast-csv/parse";
-import { parse } from "path";
 
 
 dotenv.config();
@@ -25,115 +23,78 @@ app.get("/seed", (req, res) => {
     //For each row in the csv file pull data from the db
     //Add each object to the database
 
+    //Delete everything in puzzle collection
+    (async () => {
+        await Puzzle.deleteMany();
+    })();
+    
+
     let puzzle = {};
+    puzzle.answer = {};
 
     const readable = fs.createReadStream("../irris_guessing_game_answers_shuffled.csv", "utf-8");
 
-    const lineReader = readline.createInterface(readable);
-    let firstLine = true;
 
-    lineReader.on("line", (line) => {
-        if (firstLine) {
-            firstLine = false;
-            return;
-        }
-
-        if (line[0] == 0){
-            lineReader.close();
-            lineReader.removeAllListeners();
-        }
-
-        const row = line.split(",");
-
-        puzzle.Days_since_launch = row[0];
-        puzzle.answer = {};
-        puzzle.answer.names = [row[1].toLowerCase(), row[2].toLowerCase(), row[3].toLowerCase(), row[4].toLowerCase(), row[5].toLowerCase()];
-
-        const pictures = [];
-        const names = puzzle.answer.names;
-        puzzle.answer.pictures = [];
-
+    readable.on("data", (chunk) => {
+        const lines = chunk.split("\n");
+        const index = Array.from({length: 6}, (_, index) => index + 1);
+        const results = index.map(i => lines[i]);
         
-        const member1 = Photo.aggregate().match({member: names[0]}).sample(1);
-        const member2 = Photo.aggregate().match({member: names[1]}).sample(1);
-        const member3 = Photo.aggregate().match({member: names[2]}).sample(1);
-        const member4 = Photo.aggregate().match({member: names[3]}).sample(1);
-        const member5 = Photo.aggregate().match({member: names[4]}).sample(1);
+
+        for (let i = 0; i < results.length; i ++) {
 
 
-        Promise.all([member1, member2, member3, member4, member5])
-            .then((values) => {
-                for(let i = 0; i < values.length; i ++){
-                    const photo = values[i][0];
+            let pictures = [];
 
-                    if(photo.cropped.length == 1){
-                        pictures.push(photo.cropped[0]);
-                    }else {
-                        const randInd = Math.round(Math.random() * (photo.cropped.length - 1))
-                        pictures.push(photo.cropped[randInd]);
+            const result = results[i].split(",").map(n => n.toLowerCase());
+
+            const names = [result[1], result[2], result[3], result[4], result[5]];
+
+            const member1 = Photo.aggregate().match({member: names[0]}).sample(1);
+            const member2 = Photo.aggregate().match({member: names[1]}).sample(1);
+            const member3 = Photo.aggregate().match({member: names[2]}).sample(1);
+            const member4 = Photo.aggregate().match({member: names[3]}).sample(1);
+            const member5 = Photo.aggregate().match({member: names[4]}).sample(1);
+
+            Promise.all([member1, member2, member3, member4, member5])
+                .then(async (values) => {
+                    for(let i = 0; i < values.length; i ++){
+                        const photo = values[i][0];
+
+                        if(photo.cropped.length == 1){
+                            pictures.push(photo.cropped[0]);
+                        }else {
+                            const randInd = Math.round(Math.random() * (photo.cropped.length - 1))
+                            pictures.push(photo.cropped[randInd]);
+                        }                    
                     }
 
-                   
-                }
-                puzzle.answer.pictures = pictures;
-                console.log(puzzle);
-            })
+                    let currDate = new Date();
+                    if (result[0] == 0) {
+                        puzzle.date = currDate;
+                    }else {
+                        puzzle.date = new Date(currDate.setDate(currDate.getDate() + Number(result[0])));
+                    }
 
-            
+                    puzzle.Days_since_launch = result[0];
+                    puzzle.answer.names = names;
+                    puzzle.answer.pictures = pictures;
 
-        // for (let i = 0; i < names.length; i ++){
-        //     const query = {member: names[i]}
-        //     Photo.aggregate().match(query).sample(1)
-        //         .then((data) => {
-        //             const photo = data[0];
-        //             const randInd = Math.round(Math.random() * photo.cropped.length);
-        //             pictures.push(`Photo of ${names[i]} ${photo.cropped[randInd]}`);
-        //             console.log(pictures);
-        //         })
+                    //Add new puzzles to collection
+                    await Puzzle.create(puzzle);
 
-        //     // const photo = result[0];
-        //     // const randInd = Math.round(Math.random() * photo.cropped.length)
-            
-        //     // pictures.push(photo.cropped[randInd]);
-        // }
+                    console.log(puzzle);
+                    return;
+                    
+                })
 
-        // console.log(puzzle);
+
+            }
+
+            readable.destroy();
+
+        
     })
-
-    // parseFile("../irris_guessing_game_answers_shuffled.csv", {maxRows: 5, skipRows: 1})
-    //     .on("error", error => console.log(error))
-    //     .on("data", (row) => {
-
-    //         puzzle.Days_since_launch = row[0];
-
-    //         puzzle.answer = {};
-    //         puzzle.answer.names = [row[1].toLowerCase(), row[2].toLowerCase(), row[3].toLowerCase(), row[4].toLowerCase(), row[5].toLowerCase()];
-
-    //         //Get model for Photos and query it for a random photo based on the name
-
-    //         const names = puzzle.answer.names
-    //         const pictures = [];
-
-    //         for (let i = 0; i < names.length; i ++){
-    //             console.log(names.length)
-    //             const query = {member: names[i]}
-    //             Photo.aggregate().match(query).sample(1)
-    //                 .then((data) => {
-    //                     const photo = data[0]
-    //                     console.log(photo)
-    //                     console.log(photo.member + " index " + i)
-    //                     console.log(photo.cropped)
-    //                 })
-
-    //             // const photo = result[0];
-    //             // const randInd = Math.round(Math.random() * photo.cropped.length)
-                
-    //             // pictures.push(photo.cropped[randInd]);
-                
-    //         }
-
-    //     })
-    //     .on("end", rowCount => console.log(`Parsed ${rowCount} rows`))
     
 })
 

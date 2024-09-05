@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import Photo from "./models/photo.js";
 import Puzzle from "./models/puzzle.js";
 
+
 import * as fs from "fs";
 
 
@@ -16,6 +17,15 @@ const PORT = process.env.PORT;
 
 app.get("/", (req, res) => {
     res.send("Welcome to IRRIS Guessing Game API");
+})
+
+app.get("/v1/puzzle/:date", async (req, res) => {
+    const dateQuery = new Date(req.params.date);
+    const query = {date: dateQuery};
+
+    const result = await Puzzle.findOne(query);
+
+    res.send(result);
 })
 
 app.get("/seed", (req, res) => {
@@ -71,9 +81,10 @@ app.get("/seed", (req, res) => {
 
                     let currDate = new Date();
                     if (result[0] == 0) {
-                        puzzle.date = currDate;
+                        puzzle.date = currDate.toISOString().split('T')[0];
                     }else {
-                        puzzle.date = new Date(currDate.setDate(currDate.getDate() + Number(result[0])));
+                        currDate = new Date(currDate.setDate(currDate.getDate() + Number(result[0])));
+                        puzzle.date = currDate.toISOString().split('T')[0];
                     }
 
                     puzzle.Days_since_launch = result[0];
@@ -82,8 +93,6 @@ app.get("/seed", (req, res) => {
 
                     //Add new puzzles to collection
                     await Puzzle.create(puzzle);
-
-                    console.log(puzzle);
                     return;
                     
                 })
@@ -95,6 +104,8 @@ app.get("/seed", (req, res) => {
 
         
     })
+
+    res.send("Seeding Complete!");
     
 })
 

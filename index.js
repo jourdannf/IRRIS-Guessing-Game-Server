@@ -28,7 +28,10 @@ app.get("/v1/puzzle/:date", async (req, res) => {
 
     const result = await Puzzle.findOne(query);
 
-    res.send(result);
+    if (!result) res.status(404).send("Resource Not Found");
+    else res.status(200).send(result);
+
+    
 })
 
 app.get("/seed", (req, res) => {
@@ -50,7 +53,7 @@ app.get("/seed", (req, res) => {
 
     readable.on("data", (chunk) => {
         const lines = chunk.split("\n");
-        const index = Array.from({length: 6}, (_, index) => index + 1);
+        const index = Array.from({length: 1}, (_, index) => index + 1);
         const results = index.map(i => lines[i]);
         
 

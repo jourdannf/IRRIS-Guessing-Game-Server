@@ -2,6 +2,7 @@ import express from "express";
 import db from "./db/conn.mjs";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import cors from "cors";
 
 import Photo from "./models/photo.js";
 import Puzzle from "./models/puzzle.js";
@@ -14,6 +15,8 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT;
+
+app.use(cors());
 
 app.get("/", (req, res) => {
     res.send("Welcome to IRRIS Guessing Game API");

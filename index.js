@@ -85,7 +85,7 @@ app.get("/seed", (req, res) => {
                         }                    
                     }
 
-                    let currDate = new Date();
+                    let currDate = new Date("2024/09/18");
                     if (result[0] == 0) {
                         puzzle.date = currDate.toISOString().split('T')[0];
                     }else {

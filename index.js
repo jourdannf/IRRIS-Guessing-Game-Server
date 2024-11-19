@@ -53,126 +53,131 @@ app.get("/seed", (req, res) => {
 
     readable.on("data", (chunk) => {
         const lines = chunk.split("\n");
-        const index = Array.from({length: 1}, (_, index) => index + 1);
-        console.log(index);
-        const results = index.map(i => lines[i]);
-        console.log(results)
+        const index = Array.from({length: 5}, (_, index) => index + 1);
+
         
+        const results = index.map(i => lines[i]);
+
 
         for (let i = 0; i < results.length; i ++) {
-
-            let shouldLoop = true;
-
-            // while (shouldLoop) {
-                let pictures = [];
-
-                const result = results[i].split(",").map(n => n.toLowerCase());
-                const names = [result[1], result[2], result[3], result[4], result[5]];
-
-                // const member1 = Photo.aggregate().match({member: names[0]}).sample(1);
-                // const member2 = Photo.aggregate().match({member: names[1]}).sample(1);
-                // const member3 = Photo.aggregate().match({member: names[2]}).sample(1);
-                // const member4 = Photo.aggregate().match({member: names[3]}).sample(1);
-                // const member5 = Photo.aggregate().match({member: names[4]}).sample(1);
-
-                async function fillArr (names, arr = []) {
-                    let ids = [];
-                    let keepGoing = true;
-
-                    for (i = 0; i < names.length; i ++) {                   
-                        while (keepGoing) {
-                            const r = await Photo.aggregate().match({member: names[i]}).sample(1);
-                            if (!ids.includes(r._id)) {
-                                keepGoing = false;
-                                arr.push(r[0]);
-                                ids.push(r[0]._id);
-                            }
-                        }
-
-                        keepGoing = true;
-
-                    }
+            let pictures = [];
 
 
-                    return arr;
-                }
+            const result = results[i].split(",").map(n => n.toLowerCase());
+            const names = [result[1], result[2], result[3], result[4], result[5]];
 
+            // const member1 = Photo.aggregate().match({member: names[0]}).sample(1);
+            // const member2 = Photo.aggregate().match({member: names[1]}).sample(1);
+            // const member3 = Photo.aggregate().match({member: names[2]}).sample(1);
+            // const member4 = Photo.aggregate().match({member: names[3]}).sample(1);
+            // const member5 = Photo.aggregate().match({member: names[4]}).sample(1);
 
-                fillArr(names).then(async (values) => {
-                    for (let i = 0; i < values.length; i ++) {
-                        const photo = values[i];
-    
-                        if(photo.cropped.length == 1){
-                            pictures.push(photo.cropped[0]);
-                        }else {
-                            let randInd = Math.round(Math.random() * (photo.cropped.length - 1));
-    
-                            pictures.push(photo.cropped[randInd]);
-                        }
-                    }
-    
-                    let currDate = new Date();
-                    if (result[0] == 0) {
-                        puzzle.date = currDate.toISOString().split('T')[0];
-                    }else {
-                        currDate = new Date(currDate.setDate(currDate.getDate() + Number(result[0])));
-                        puzzle.date = currDate.toISOString().split('T')[0];
-                    }
-    
-                    puzzle.Days_since_launch = result[0];
-                    puzzle.answer.names = names;
-                    puzzle.answer.pictures = pictures;
+            async function fillArr (names, arr = []) {
+                let ids = [];
+                let keepGoing = true;
 
-                    //Add new puzzles to collection
-                    await Puzzle.create(puzzle);
-                    return;
-
-                })
+                // console.log(names);
 
                 
 
-                // console.log(pictures);
-
-
-                // Promise.all([member1, member2, member3, member4, member5])
-                //     .then(async (values) => {
-
-                //         // console.log(values);
-
-                //         for(let i = 0; i < values.length; i ++){
-                //             const photo = values[i][0];
-
-                //             if(photo.cropped.length == 1){
-                //                 pictures.push(photo.cropped[0]);
-                //             }else {
-                //                 let randInd = Math.round(Math.random() * (photo.cropped.length - 1));
-
-                //                 pictures.push(photo.cropped[randInd]);
-                //             }                    
-                //         }
-
-                //         // shouldLoop = false;
-
-                //         let currDate = new Date();
-                //         if (result[0] == 0) {
-                //             puzzle.date = currDate.toISOString().split('T')[0];
-                //         }else {
-                //             currDate = new Date(currDate.setDate(currDate.getDate() + Number(result[0])));
-                //             puzzle.date = currDate.toISOString().split('T')[0];
-                //         }
-
-                //         puzzle.Days_since_launch = result[0];
-                //         puzzle.answer.names = names;
-                //         puzzle.answer.pictures = pictures;
-
-                //         //Add new puzzles to collection
-                //         await Puzzle.create(puzzle);
-                //         return;
+                for (let i = 0; i < names.length; i ++) {
+                    const l = await Photo.aggregate().match({member: names[0]}).sample(1);
+            
+                    while (keepGoing) {
+                        const r = await Photo.aggregate().match({member: names[i]}).sample(1);
                         
-                //     })
+                        if (!ids.includes(r[0]._id)) {
+                            keepGoing = false;
+                            arr.push(r[0]);
+                            ids.push(r[0]._id);
+                        }
+
+                    }
+
+                    keepGoing = true;
 
 
-                // }
+                }
+
+                return arr;
+            }
+
+
+            fillArr(names).then(async (values) => {
+                for (let i = 0; i < values.length; i ++) {
+                    const photo = values[i];
+
+                    if(photo.cropped.length == 1){
+                        pictures.push(photo.cropped[0]);
+                    }else {
+                        let randInd = Math.round(Math.random() * (photo.cropped.length - 1));
+
+                        pictures.push(photo.cropped[randInd]);
+                    }
+                }
+
+                let currDate = new Date();
+                if (result[0] == 0) {
+                    puzzle.date = currDate.toISOString().split('T')[0];
+                }else {
+                    currDate = new Date(currDate.setDate(currDate.getDate() + Number(result[0])));
+                    puzzle.date = currDate.toISOString().split('T')[0];
+                }
+
+                puzzle.Days_since_launch = result[0];
+                puzzle.answer.names = names;
+                puzzle.answer.pictures = pictures;
+
+                //Add new puzzles to collection
+                await Puzzle.create(puzzle);
+                return;
+
+            })
+
+            
+
+            // console.log(pictures);
+
+
+            // Promise.all([member1, member2, member3, member4, member5])
+            //     .then(async (values) => {
+
+            //         // console.log(values);
+
+            //         for(let i = 0; i < values.length; i ++){
+            //             const photo = values[i][0];
+
+            //             if(photo.cropped.length == 1){
+            //                 pictures.push(photo.cropped[0]);
+            //             }else {
+            //                 let randInd = Math.round(Math.random() * (photo.cropped.length - 1));
+
+            //                 pictures.push(photo.cropped[randInd]);
+            //             }                    
+            //         }
+
+            //         // shouldLoop = false;
+
+            //         let currDate = new Date();
+            //         if (result[0] == 0) {
+            //             puzzle.date = currDate.toISOString().split('T')[0];
+            //         }else {
+            //             currDate = new Date(currDate.setDate(currDate.getDate() + Number(result[0])));
+            //             puzzle.date = currDate.toISOString().split('T')[0];
+            //         }
+
+            //         puzzle.Days_since_launch = result[0];
+            //         puzzle.answer.names = names;
+            //         puzzle.answer.pictures = pictures;
+
+            //         //Add new puzzles to collection
+            //         await Puzzle.create(puzzle);
+            //         return;
+                    
+            //     })
+
+
+            // }
             }
 
             // let pictures = [];

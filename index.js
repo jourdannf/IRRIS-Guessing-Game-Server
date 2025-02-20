@@ -24,6 +24,7 @@ app.get("/", (req, res) => {
 
 app.get("/v1/puzzle/:date", async (req, res) => {
     const dateQuery = new Date(req.params.date);
+    console.log(dateQuery);
     const query = {date: dateQuery};
 
     const result = await Puzzle.findOne(query);
@@ -53,7 +54,7 @@ app.get("/seed", (req, res) => {
 
     readable.on("data", (chunk) => {
         const lines = chunk.split("\n");
-        const index = Array.from({length: 5}, (_, index) => index + 1);
+        const index = Array.from({length: 3}, (_, index) => index + 1);
 
         
         const results = index.map(i => lines[i]);
@@ -105,12 +106,14 @@ app.get("/seed", (req, res) => {
                 }
 
                 let currDate = new Date();
-                if (result[0] == 0) {
-                    puzzle.date = currDate.toISOString().split('T')[0];
-                }else {
-                    currDate = new Date(currDate.setDate(currDate.getDate() + Number(result[0])));
-                    puzzle.date = currDate.toISOString().split('T')[0];
-                }
+
+
+                currDate = new Date(currDate.setDate(currDate.getDate() + Number(result[0])));
+
+                let transformDate = new Date(`${currDate.getFullYear()}-${currDate.getMonth()+1}-${currDate.getDate()}`);
+                
+
+                puzzle.date = transformDate.toISOString().split('T')[0];
 
                 puzzle.Days_since_launch = result[0];
                 puzzle.answer.names = names;

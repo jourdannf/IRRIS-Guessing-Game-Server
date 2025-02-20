@@ -48,7 +48,7 @@ app.get("/seed", (req, res) => {
     let puzzle = {};
     puzzle.answer = {};
 
-    const readable = fs.createReadStream("../irris_guessing_game_answers_shuffled.csv", "utf-8");
+    const readable = fs.createReadStream("./irris_guessing_game_answers_shuffled.csv", "utf-8");
 
 
     readable.on("data", (chunk) => {
